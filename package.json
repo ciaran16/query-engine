@@ -1,0 +1,35 @@
+{
+  "name": "query-engine",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "test": "vitest",
+    "inspect": "pnpm inspect:lint && pnpm inspect:prettier",
+    "inspect:lint": "eslint .",
+    "inspect:prettier": "prettier --check .",
+    "fix": "pnpm fix:prettier && pnpm fix:lint",
+    "fix:lint": "eslint . --fix",
+    "fix:prettier": "prettier --write ."
+  },
+  "prettier": {
+    "plugins": [
+      "prettier-plugin-organize-imports"
+    ]
+  },
+  "devDependencies": {
+    "@eslint/compat": "^1.2.0",
+    "@eslint/js": "^9.12.0",
+    "@types/eslint-config-prettier": "^6.11.3",
+    "@types/eslint__js": "^8.42.3",
+    "@types/node": "^22.7.5",
+    "eslint": "^9.12.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.3.3",
+    "prettier-plugin-organize-imports": "^4.1.0",
+    "typescript": "^5.5.3",
+    "typescript-eslint": "^8.8.1",
+    "vitest": "^2.1.2"
+  }
+}
