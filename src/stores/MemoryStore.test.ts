@@ -44,3 +44,9 @@ it("only streams the specified columns", () => {
 
   expect(rows).toEqual([{ name: "James" }, { name: "Elizabeth" }]);
 });
+
+it("allows specifying no columns", () => {
+  const rows = [...exampleStore.streamRows([])];
+
+  expect(rows).toEqual([{}, {}]);
+});
