@@ -1,7 +1,8 @@
 import { Query } from "../stores/Store.js";
-import { Schema } from "../ValidSchema.js";
+import { Schema, ValidSchema } from "../ValidSchema.js";
 import { Lexer } from "./Lexer.js";
 import { Parser } from "./Parser.js";
+import { TypeChecker } from "./TypeChecker.js";
 
 export type ParseResult<T> =
   | {
@@ -17,6 +18,7 @@ export type ParseResult<T> =
     };
 
 export function parseQuery<TSchema extends Schema>(
+  schema: ValidSchema<TSchema>,
   queryString: string,
 ): ParseResult<Query<TSchema, string[]>> {
   const tokensResult = new Lexer(queryString).readTokensUntilEnd();
@@ -29,11 +31,6 @@ export function parseQuery<TSchema extends Schema>(
     return parsingResult;
   }
 
-  return {
-    ok: false,
-    errorType: "Not implemented",
-    message: queryString,
-    start: 0,
-    length: 0,
-  };
+  const { projectedColumnTokens, parsedFilters } = parsingResult.value;
+  return new TypeChecker(schema).check(projectedColumnTokens, parsedFilters);
 }

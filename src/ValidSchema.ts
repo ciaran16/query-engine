@@ -41,4 +41,14 @@ export class ValidSchema<TSchema extends Schema> {
 
     this.columnNames = [firstColumnName, ...otherColumnNames];
   }
+
+  /** Checks if the schema has a column with the given name. */
+  hasColumn(columnName: string): boolean {
+    return this.schema[columnName] !== undefined;
+  }
+
+  /** Gets the type name of a column. */
+  getColumnType<K extends keyof TSchema>(columnName: K): TSchema[K] {
+    return this.schema[columnName];
+  }
 }
