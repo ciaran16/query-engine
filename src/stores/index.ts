@@ -1,2 +1,2 @@
 export { MemoryStore } from "./MemoryStore.js";
-export { Store } from "./Store.js";
+export { Query, Store } from "./Store.js";
