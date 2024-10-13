@@ -1,8 +1,19 @@
 import { Query } from "../stores/Store.js";
-import { Schema, ValidSchema } from "../ValidSchema.js";
+import { Filter, Filters } from "../ValidFilters.js";
+import {
+  ColumnTypeName,
+  ColumnValue,
+  Schema,
+  ValidSchema,
+} from "../ValidSchema.js";
 import { ParseResult } from "./index.js";
-import { Token } from "./Lexer.js";
-import { ColumnNameToken, ParsedFilter } from "./Parser.js";
+import { Token, TokenType } from "./Lexer.js";
+import { ColumnNameToken, ParsedFilter, ValueToken } from "./Parser.js";
+
+const tokenTypeNames: Record<ValueToken["type"], ColumnTypeName> = {
+  [TokenType.Number]: "number",
+  [TokenType.String]: "string",
+};
 
 export class TypeChecker<TSchema extends Schema> {
   constructor(private readonly schema: ValidSchema<TSchema>) {}
@@ -23,7 +34,41 @@ export class TypeChecker<TSchema extends Schema> {
 
     const project = columnNameTokens.map((token) => token.value);
 
-    return { ok: true, value: { project, filters: {} } };
+    const filtersResult = this.checkFilters(parsedFilters);
+
+    return filtersResult.ok
+      ? { ok: true, value: { project, filters: filtersResult.value } }
+      : filtersResult;
+  }
+
+  private checkFilters(
+    parsedFilters: ParsedFilter[],
+  ): ParseResult<Filters<TSchema>> {
+    return parsedFilters.reduce<
+      ParseResult<Record<string, Filter<ColumnValue<ColumnTypeName>>>>
+    >(
+      (result, { columnToken, operatorToken, valueToken }) => {
+        if (!result.ok) {
+          return result;
+        }
+
+        const columnName = columnToken.value;
+        const typeName = tokenTypeNames[valueToken.type];
+        if (typeName !== this.schema.getColumnType(columnName)) {
+          return error(`Expected value to have type ${typeName}`, valueToken);
+        }
+
+        const filters = result.value;
+        const filter = (filters[columnName] ??= {});
+        if (filter[operatorToken.value] !== undefined) {
+          return error(`Duplicate filter for column`, operatorToken);
+        }
+
+        filter[operatorToken.value] = valueToken.value;
+        return { ok: true, value: filters };
+      },
+      { ok: true, value: {} },
+    ) as ParseResult<Filters<TSchema>>;
   }
 }
 

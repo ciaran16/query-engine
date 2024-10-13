@@ -17,6 +17,20 @@ export type ParseResult<T> =
       length: number;
     };
 
+/**
+ * Parse and type check a query string.
+ *
+ * @example
+ * const query = parseQuery(schema, "PROJECT name, age FILTER name = 'James', age < 30");
+ *
+ * query === {
+ *   ok: true,
+ *   value: {
+ *     project: ["name", "age"],
+ *     filters: { name: { equals: "James" }, age: { lt: 30 } }
+ *   }
+ * }
+ */
 export function parseQuery<TSchema extends Schema>(
   schema: ValidSchema<TSchema>,
   queryString: string,
