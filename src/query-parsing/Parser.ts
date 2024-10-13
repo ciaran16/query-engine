@@ -1,17 +1,18 @@
-import { Operator } from "../ValidFilters.js";
 import { ParseResult } from "./index.js";
-import { Keyword, Token, TokenType } from "./Lexer.js";
+import { Token, TokenType } from "./Lexer.js";
 
 /** Column names are either identifiers or strings. */
 export type ColumnNameToken = Token & {
   type: TokenType.Identifier | TokenType.String;
 };
 
+export type OperatorToken = Token & { type: TokenType.Operator };
+
 export type ValueToken = Token & { type: TokenType.Number | TokenType.String };
 
 export type ParsedFilter = {
   columnToken: ColumnNameToken;
-  operator: Operator;
+  operatorToken: OperatorToken;
   valueToken: ValueToken;
 };
 
@@ -22,17 +23,24 @@ export class Parser {
     projectedColumnTokens: ColumnNameToken[];
     parsedFilters: ParsedFilter[];
   }> {
-    const projectKeywordResult = this.parseKeyword("PROJECT", this.tokens[0]);
-    if (!projectKeywordResult.ok) {
-      return projectKeywordResult;
+    const keywordToken = this.tokens[0];
+    if (!keywordToken || keywordToken.type !== TokenType.Keyword) {
+      return this.error("Expected a keyword", keywordToken);
     }
 
-    const columnsResult = this.parseColumns(1);
-    if (!columnsResult.ok) {
-      return columnsResult;
+    const projectedColumnsResult: ParseResult<{
+      projectedColumnTokens: ColumnNameToken[];
+      iToken: number;
+    }> =
+      keywordToken.value === "PROJECT"
+        ? this.parseColumns(1)
+        : { ok: true, value: { projectedColumnTokens: [], iToken: 0 } };
+
+    if (!projectedColumnsResult.ok) {
+      return projectedColumnsResult;
     }
 
-    const { projectedColumnTokens, iToken } = columnsResult.value;
+    const { projectedColumnTokens, iToken } = projectedColumnsResult.value;
 
     const filtersResult = this.parseFilters(iToken);
 
@@ -54,9 +62,8 @@ export class Parser {
     }
 
     projectedColumnTokens.push(columnNameResult.value);
-    const nextToken = this.tokens[iToken + 1];
 
-    return nextToken?.type === TokenType.Comma
+    return this.tokens[iToken + 1]?.type === TokenType.Comma
       ? this.parseColumns(iToken + 2, projectedColumnTokens)
       : { ok: true, value: { projectedColumnTokens, iToken: iToken + 1 } };
   }
@@ -65,20 +72,57 @@ export class Parser {
     iToken: number,
     filters: ParsedFilter[] = [],
   ): ParseResult<ParsedFilter[]> {
-    const filterToken = this.tokens[iToken];
-    if (!filterToken) {
+    const token = this.tokens[iToken];
+    if (!token) {
       return { ok: true, value: filters };
     }
 
-    const filterKeywordResult = this.parseKeyword("FILTER", filterToken);
-    if (!filterKeywordResult.ok) {
-      // Improve the error message slightly if this is the first filter.
-      return filters.length > 0
-        ? filterKeywordResult
-        : this.error("Expected a comma or keyword 'FILTER'", filterToken);
+    if (
+      (token.type !== TokenType.Keyword || token.value !== "FILTER") &&
+      token.type !== TokenType.Comma
+    ) {
+      return this.error("Expected a comma or keyword 'FILTER'", token);
     }
 
-    return { ok: true, value: filters };
+    const filterTokens = this.tokens.slice(iToken + 1, iToken + 4);
+    const filterResult = this.parseFilter(filterTokens);
+    if (!filterResult.ok) {
+      return filterResult;
+    }
+
+    filters.push(filterResult.value);
+    return this.parseFilters(iToken + 4, filters);
+  }
+
+  private parseFilter([
+    columnNameToken,
+    operatorToken,
+    valueToken,
+  ]: Token[]): ParseResult<ParsedFilter> {
+    if (!columnNameToken) {
+      return this.error("Expected a column name", undefined);
+    }
+
+    const columnNameResult = this.parseColumnName(columnNameToken);
+    if (!columnNameResult.ok) {
+      return columnNameResult;
+    }
+
+    if (operatorToken?.type !== TokenType.Operator) {
+      return this.error("Expected an operator", operatorToken);
+    }
+
+    if (
+      valueToken?.type !== TokenType.Number &&
+      valueToken?.type !== TokenType.String
+    ) {
+      return this.error("Expected a value", valueToken);
+    }
+
+    return {
+      ok: true,
+      value: { columnToken: columnNameResult.value, operatorToken, valueToken },
+    };
   }
 
   private parseColumnName(
@@ -88,15 +132,6 @@ export class Parser {
       token?.type === TokenType.String
       ? { ok: true, value: token }
       : this.error("Expected a column name", token);
-  }
-
-  private parseKeyword(
-    expectedKeyword: Keyword,
-    token: Token | undefined,
-  ): ParseResult<Keyword> {
-    return token?.type === TokenType.Keyword && token.value === expectedKeyword
-      ? { ok: true, value: token.value }
-      : this.error(`Expected keyword '${expectedKeyword}'`, token);
   }
 
   private error(message: string, token: Token | undefined): ParseResult<never> {
