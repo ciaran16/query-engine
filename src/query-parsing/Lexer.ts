@@ -12,7 +12,7 @@ export enum TokenType {
 
 const KEYWORDS = ["PROJECT", "FILTER"] as const;
 
-type Keyword = (typeof KEYWORDS)[number];
+export type Keyword = (typeof KEYWORDS)[number];
 
 export type TokenWithoutPosition =
   | { type: TokenType.Comma }

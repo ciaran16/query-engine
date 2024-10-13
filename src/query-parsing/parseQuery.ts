@@ -1,6 +1,7 @@
 import { Query } from "../stores/Store.js";
 import { Schema } from "../ValidSchema.js";
 import { Lexer } from "./Lexer.js";
+import { Parser } from "./Parser.js";
 
 export type ParseResult<T> =
   | {
@@ -21,6 +22,11 @@ export function parseQuery<TSchema extends Schema>(
   const tokensResult = new Lexer(queryString).readTokensUntilEnd();
   if (!tokensResult.ok) {
     return tokensResult;
+  }
+
+  const parsingResult = new Parser(tokensResult.value).parse();
+  if (!parsingResult.ok) {
+    return parsingResult;
   }
 
   return {
