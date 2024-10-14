@@ -169,7 +169,7 @@ it("gives an error if a filter value has the wrong type", () => {
   expect(result).toEqual({
     ok: false,
     errorType: "Type error",
-    message: "Expected value to have type number",
+    message: "Expected a string",
     start: 2,
     length: 3,
   });

@@ -49,7 +49,10 @@ export abstract class Store<TSchema extends Schema> {
   }
 
   /**
-   * Filter rows from a store.
+   * Filter rows from a store, returning an array of matching rows.
+   *
+   * Note: this will load all matching rows into memory at once. Consider using `streamQuery` to
+   * process matching rows one at a time.
    *
    * @example
    * // Find the names of all people aged 18 or over.

@@ -54,8 +54,9 @@ export class TypeChecker<TSchema extends Schema> {
 
         const columnName = columnToken.value;
         const typeName = tokenTypeNames[valueToken.type];
-        if (typeName !== this.schema.getColumnType(columnName)) {
-          return error(`Expected value to have type ${typeName}`, valueToken);
+        const expectedTypeName = this.schema.getColumnType(columnName);
+        if (typeName !== expectedTypeName) {
+          return error(`Expected a ${expectedTypeName}`, valueToken);
         }
 
         const filters = result.value;

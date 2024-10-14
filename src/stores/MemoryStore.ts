@@ -29,7 +29,7 @@ export class MemoryStore<TSchema extends Schema> extends Store<TSchema> {
       (columnName) => this.columns[columnName].length === this.size,
     );
     if (!allSameLength) {
-      throw new TypeError("All columns arrays must have the same length.");
+      throw new TypeError("All column arrays must have the same length.");
     }
   }
 
